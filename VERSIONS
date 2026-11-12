@@ -1,0 +1,9 @@
+# Pinned upstream versions. The Dockerfile's ARG defaults must match this file.
+MOODLE_VERSION=5.3.1
+MOODLE_COMMIT=cfe123f26fc7071981fe949cb16cd5a08a8234f1
+BOOST_UNION_TAG=v5.3-r1
+BOOST_UNION_COMMIT=0a4c5951cdbf2a1a45a6be1f855b076af37bcfdb
+BASE_IMAGE=moodlehq/moodle-php-apache:8.3-bookworm@sha256:1db7b6ed013fcb5268095b5e28c410ba9117d38d9b6a324c100c48fcbe69745e
+WEBSITE_COMMIT=5659dda41ec4377781173afa65d458ed6a660314
+ROBOTO=@fontsource/roboto@5.3.0
+COMPOSER_IMAGE=composer:2.10.3@sha256:2cf275428757e5435a667bfc0d038b14520ca02be2b1b70d44a05c8c19e2de48
