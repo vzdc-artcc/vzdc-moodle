@@ -1,0 +1,22 @@
+// Theme vZDC - pre SCSS (variables).
+//
+// Core runs Boost's and Boost Union's pre-SCSS callbacks before this one, so a
+// variable set here wins over the same variable set there, including Boost
+// Union's brand colour setting. site-config.php sets that setting to the same
+// value so the admin pages agree with what is compiled.
+
+// Brand colour, and the text colour used on top of it. Bootstrap picks
+// $color-contrast-light for any background dark enough to need light text,
+// which for #500E0E is every primary surface.
+$primary: #500E0E;
+$color-contrast-light: #EDEDF5;
+
+// Roboto is bundled in fonts/ and declared in post.scss; the rest is a fallback.
+$font-family-sans-serif: "Roboto", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+
+// Dark colour mode. Bootstrap derives the dark-mode link and emphasis colours
+// by tinting $primary, which for a maroon this deep stays too dark to read on
+// a dark background. Lighter tints of the same hue instead.
+$primary-text-emphasis-dark: #F0B4B4;
+$link-color-dark: #F0B4B4;
+$link-hover-color-dark: #F8D6D6;

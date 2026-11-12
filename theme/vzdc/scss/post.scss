@@ -1,0 +1,135 @@
+// Theme vZDC - main SCSS, appended to Boost Union's.
+//
+// Colours that must differ between the light and dark colour modes are scoped
+// with [data-bs-theme="dark"], the Bootstrap 5.3 convention that Moodle 5.3
+// Boost uses for its (experimental) colour modes.
+
+// Roboto, bundled (SIL Open Font License, fonts/LICENSE-OFL.txt) so that no
+// page pulls fonts from a third-party CDN. Bold 500/700 are real faces; the
+// only italic shipped is 400, browsers synthesise the rest.
+@font-face {
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("[[font:theme_vzdc|roboto-latin-ext-400-normal.woff2]]") format("woff2");
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("[[font:theme_vzdc|roboto-latin-400-normal.woff2]]") format("woff2");
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("[[font:theme_vzdc|roboto-latin-ext-500-normal.woff2]]") format("woff2");
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("[[font:theme_vzdc|roboto-latin-500-normal.woff2]]") format("woff2");
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("[[font:theme_vzdc|roboto-latin-ext-700-normal.woff2]]") format("woff2");
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("[[font:theme_vzdc|roboto-latin-700-normal.woff2]]") format("woff2");
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+    font-family: "Roboto";
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url("[[font:theme_vzdc|roboto-latin-ext-400-italic.woff2]]") format("woff2");
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: "Roboto";
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url("[[font:theme_vzdc|roboto-latin-400-italic.woff2]]") format("woff2");
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+// Text on primary surfaces: #EDEDF5 rather than pure white.
+.btn-primary {
+    --bs-btn-color: #EDEDF5;
+    --bs-btn-hover-color: #EDEDF5;
+    --bs-btn-active-color: #EDEDF5;
+    --bs-btn-disabled-color: #EDEDF5;
+}
+
+.text-bg-primary,
+.badge.bg-primary {
+    color: #EDEDF5 !important; // stylelint-disable-line declaration-no-important
+}
+
+// The navbar logo has dark lettering; in dark mode use the version with light
+// lettering. The compact logo is rendered by core_renderer::get_compact_logo_url().
+[data-bs-theme="dark"] .navbar .navbar-brand img.logo {
+    content: url("[[pix:theme_vzdc|logo-light]]");
+}
+
+// Login page. Moodle 5.2+ Boost lays it out side by side: a decorative left
+// panel (on wide screens) and the form, with the large logo, on the right.
+// Boost fills the left panel with a stock photograph and an "AI-generated
+// image" caption; replace both with the cherry-blossom artwork from vzdc.org
+// on a light field, in both colour modes like core's photograph. The selector
+// outranks Boost's (1,2,1), which is emitted after this file. The source image
+// is 626x366, so it is never drawn larger than that.
+body.pagelayout-login #page aside.login-layout-left {
+    background-color: #EDEDF5;
+    background-image: url("[[pix:theme_vzdc|home-bg]]");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: min(80%, 626px) auto;
+
+    &::after {
+        content: none;
+    }
+}
+
+// The large logo is an opaque PNG with a white background; give it a
+// white plate in dark mode so it does not show as a hard-edged rectangle.
+[data-bs-theme="dark"] .pagelayout-login .login-logo img,
+[data-bs-theme="dark"] .pagelayout-login #logoimage {
+    background-color: #ffffff;
+    border-radius: .5rem;
+    padding: .5rem;
+}
+
+// Footer links (set as Boost Union's footnote by site-config.php).
+.vzdc-footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1.25rem;
+    justify-content: center;
+}
