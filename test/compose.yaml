@@ -1,0 +1,84 @@
+# Local test stack. Throwaway credentials, for this compose file only.
+#
+#   docker compose -f test/compose.yaml up -d db valkey caddy
+#   docker compose -f test/compose.yaml run --rm init
+#   docker compose -f test/compose.yaml up -d web cron
+#
+# Caddy plays Traefik/Cloudflare: it answers as learn.vzdc.org on the compose
+# network with a locally issued certificate, so Moodle's router check can make
+# real HTTPS requests to its own wwwroot. The web container trusts Caddy's CA
+# through test/php/zz-test-ca.ini; nothing in the image changes.
+name: vzdc-moodle-test
+
+x-moodle: &moodle
+  image: ${IMAGE:-vzdc-moodle:local}
+  platform: linux/amd64
+  environment: &moodle-env
+    MOODLE_WWWROOT: https://learn.vzdc.org
+    MOODLE_DB_HOST: db
+    MOODLE_DB_PORT: "5432"
+    MOODLE_DB_NAME: moodle
+    MOODLE_DB_USER: moodle
+    MOODLE_DB_PASSWORD: dbpass0123456789test
+    MOODLE_REDIS_HOST: valkey
+    MOODLE_REDIS_PORT: "6379"
+    MOODLE_REDIS_PASSWORD: redispass0123456789test
+    MOODLE_ADMIN_PASSWORD: "Adm1n-Throwaway-Pass!"
+    MOODLE_ADMIN_EMAIL: admin@example.org
+    MOODLE_SMTP_USER: ""
+    MOODLE_SMTP_PASSWORD: ""
+    MOODLE_VATSIM_CLIENT_ID: ""
+    MOODLE_VATSIM_CLIENT_SECRET: ""
+    MOODLE_WEBSITE_TOKEN: 0123456789abcdef0123456789abcdef
+  volumes:
+    - moodledata:/var/www/moodledata
+    - caddy-data:/caddy:ro
+    - ./php/zz-test-ca.ini:/usr/local/etc/php/conf.d/zz-test-ca.ini:ro
+    - ./trust-caddy.sh:/usr/local/bin/trust-caddy:ro
+  depends_on: [db, valkey]
+
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: moodle
+      POSTGRES_USER: moodle
+      POSTGRES_PASSWORD: dbpass0123456789test
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  valkey:
+    image: valkey/valkey:8-bookworm
+    command: ["valkey-server", "--requirepass", "redispass0123456789test"]
+
+  caddy:
+    image: caddy:2
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    ports: ["8443:443"]
+    networks:
+      default:
+        aliases: [learn.vzdc.org]
+
+  init:
+    <<: *moodle
+    command: ["moodle-init"]
+    tmpfs: ["/var/www/moodlecache:uid=33,gid=33,mode=2770"]
+    restart: "no"
+
+  web:
+    <<: *moodle
+    command: ["sh", "-c", "trust-caddy && exec apache2-foreground"]
+    tmpfs: ["/var/www/moodlecache:uid=33,gid=33,mode=2770"]
+    ports: ["8080:80"]
+
+  cron:
+    <<: *moodle
+    command: ["moodle-cron"]
+    tmpfs: ["/var/www/moodlecache:uid=33,gid=33,mode=2770"]
+
+volumes:
+  pgdata:
+  moodledata:
+  caddy-data:

@@ -1,0 +1,10 @@
+{
+	local_certs
+	skip_install_trust
+}
+
+learn.vzdc.org {
+	reverse_proxy web:80 {
+		header_up X-Forwarded-Proto https
+	}
+}
