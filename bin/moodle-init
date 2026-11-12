@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# moodle-init: the initContainer, run on every rollout.
+#
+#   1. wait for PostgreSQL and Redis
+#   2. install Moodle into an empty database, or upgrade an existing one
+#      (a no-op when nothing changed)
+#   3. apply the site configuration (bin/site-config.php)
+#
+# Safe to run any number of times. Never prints a secret: passwords reach PHP
+# only through the environment or argv, and xtrace stays off.
+set -Eeuo pipefail
+set +x
+
+MOODLE=/var/www/html
+VZDC=/opt/vzdc
+
+log() { printf '%s moodle-init: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
+trap 'log "failed (line $LINENO)"' ERR
+
+# Moodle must write its files as www-data. Drop privileges when started as root;
+# run as is when the pod already sets runAsUser.
+as_www() {
+    if [ "$(id -u)" = 0 ]; then
+        setpriv --reuid=www-data --regid=www-data --init-groups -- "$@"
+    else
+        "$@"
+    fi
+}
+
+for dir in /var/www/moodledata /var/www/moodlecache; do
+    if [ ! -w "$dir" ] && [ "$(id -u)" = 0 ]; then
+        chown www-data:www-data "$dir"
+    fi
+    as_www test -w "$dir" || { log "$dir is not writable by www-data"; exit 1; }
+done
+
+log "waiting for PostgreSQL and Redis"
+as_www php "$VZDC/preflight.php" wait "${MOODLE_INIT_WAIT_SECONDS:-300}"
+
+cd "$MOODLE"
+state=0
+as_www php "$VZDC/preflight.php" installed || state=$?
+
+case "$state" in
+    3)
+        : "${MOODLE_ADMIN_PASSWORD:?MOODLE_ADMIN_PASSWORD is required for the first install}"
+        : "${MOODLE_ADMIN_EMAIL:?MOODLE_ADMIN_EMAIL is required for the first install}"
+        log "empty database: installing Moodle"
+        as_www php admin/cli/install_database.php \
+            --agree-license \
+            --lang=en \
+            --adminuser=vzdcadmin \
+            --adminpass="$MOODLE_ADMIN_PASSWORD" \
+            --adminemail="$MOODLE_ADMIN_EMAIL" \
+            --fullname="Virtual Washington ARTCC Learning Center" \
+            --shortname="vZDC Learn"
+        ;;
+    0)
+        log "existing site: upgrading (no-op when nothing changed)"
+        as_www php admin/cli/upgrade.php --non-interactive
+        ;;
+    *)
+        log "could not tell whether Moodle is installed"
+        exit 1
+        ;;
+esac
+
+log "applying site configuration"
+as_www php "$VZDC/site-config.php"
+
+log "done"

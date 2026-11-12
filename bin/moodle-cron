@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# moodle-cron: the cron sidecar.
+#
+# Runs admin/cli/cron.php as www-data once a minute, forever. After each
+# successful run it writes the epoch to /tmp/cron-last-success (for an exec
+# liveness probe) and, if MOODLE_CRON_HEARTBEAT_URL is set, GETs that URL.
+# SIGTERM is passed on to a running cron.php, which finishes its current task.
+# The image's STOPSIGNAL is SIGWINCH (inherited from the php:apache base, where
+# it stops Apache gracefully), and the container runtime uses it for this
+# container too, so SIGWINCH means stop here as well.
+set -Euo pipefail
+set +x
+
+MOODLE=/var/www/html
+INTERVAL="${MOODLE_CRON_INTERVAL:-60}"
+STAMP=/tmp/cron-last-success
+
+log() { printf '%s moodle-cron: %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
+
+as_www() {
+    if [ "$(id -u)" = 0 ]; then
+        setpriv --reuid=www-data --regid=www-data --init-groups -- "$@"
+    else
+        "$@"
+    fi
+}
+
+child=""
+stopping=0
+on_term() {
+    stopping=1
+    if [ -n "$child" ]; then
+        kill -TERM "$child" 2>/dev/null || true
+    fi
+}
+trap on_term TERM INT WINCH
+
+cd "$MOODLE"
+log "running cron.php every ${INTERVAL}s"
+while [ "$stopping" = 0 ]; do
+    started=$(date +%s)
+
+    as_www php admin/cli/cron.php --keep-alive=0 &
+    child=$!
+    wait "$child"
+    status=$?
+    # A signal interrupts wait before cron.php exits; wait for it properly.
+    if kill -0 "$child" 2>/dev/null; then
+        wait "$child"
+        status=$?
+    fi
+    child=""
+
+    if [ "$stopping" = 1 ]; then
+        break
+    fi
+    if [ "$status" = 0 ]; then
+        date +%s > "$STAMP"
+        if [ -n "${MOODLE_CRON_HEARTBEAT_URL:-}" ]; then
+            # The URL may carry a token, so it is never printed.
+            curl -fsS -m 10 -o /dev/null "$MOODLE_CRON_HEARTBEAT_URL" 2>/dev/null \
+                || log "heartbeat GET failed"
+        fi
+    else
+        log "cron.php exited with status $status"
+    fi
+
+    remaining=$(( INTERVAL - ($(date +%s) - started) ))
+    if [ "$remaining" -gt 0 ]; then
+        sleep "$remaining" &
+        child=$!
+        wait "$child" 2>/dev/null || true
+        kill "$child" 2>/dev/null || true
+        child=""
+    fi
+done
+log "stopped"

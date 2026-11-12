@@ -1,0 +1,84 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/vzdc-artcc/vzdc-moodle
+
+jobs:
+  build:
+    name: Build and push the image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # Build the commit itself, not GitHub's merge preview of a pull request,
+      # so that the tag names exactly the code inside the image.
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Work out the tag
+        id: tag
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: echo "short=${HEAD_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # Pull requests from forks get no package write token; they only build.
+      - name: Log in to GHCR
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          push: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+          tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.short }}
+          build-args: |
+            VZDC_BUILD=${{ steps.tag.outputs.short }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.event.pull_request.head.sha || github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        env:
+          TAG: ${{ steps.tag.outputs.short }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          PUSHED: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          {
+            echo "## Image"
+            echo
+            if [ "$PUSHED" = "true" ]; then
+              echo '```'
+              echo "${IMAGE}:${TAG}@${DIGEST}"
+              echo '```'
+            else
+              echo "Built but not pushed (pull request from a fork). Digest: \`${DIGEST}\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "${IMAGE}:${TAG}@${DIGEST}"
